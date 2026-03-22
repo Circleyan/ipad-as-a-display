@@ -12,6 +12,16 @@ This project is the minimal sharable version of the setup we validated on a real
 
 This project is open source under the MIT License. See [LICENSE](./LICENSE).
 
+## Support
+
+This project stays open source.
+
+If it saves you time and you would like to support continued maintenance, you can "buy me a coffee".
+
+Donations are optional and are not required to use the project.
+
+You can add your donation link or QR code here later without changing the license.
+
 ## What This Is For
 
 Use this if you want:
