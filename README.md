@@ -8,6 +8,10 @@ This project is the minimal sharable version of the setup we validated on a real
 - SidecarLauncher reconnects the iPad over Sidecar.
 - A LaunchAgent checks periodically and recovers the iPad display when the connection drops.
 
+## License
+
+This project is open source under the MIT License. See [LICENSE](./LICENSE).
+
 ## What This Is For
 
 Use this if you want:
@@ -97,3 +101,9 @@ Installed paths:
 - The default should stay at `15` seconds unless you prefer slower recovery.
 - BetterDisplay is treated as an implementation detail. The expected user outcome is simple: the iPad becomes the usable screen.
 - `SidecarLauncher` uses private APIs, so macOS updates may break this setup.
+
+## Acknowledgements
+
+- This project uses [Ocasio-J/SidecarLauncher](https://github.com/Ocasio-J/SidecarLauncher) to trigger Sidecar connections from the command line.
+- `SidecarLauncher` is open source and licensed under the MIT License.
+- See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for third-party licensing notes.
