@@ -12,6 +12,18 @@ fi
 
 source "${CONFIG_FILE}"
 
+TRIGGER_REASON="manual"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --reason)
+      shift
+      [[ $# -gt 0 ]] && TRIGGER_REASON="$1"
+      ;;
+  esac
+  shift
+done
+
 log() {
   printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
@@ -72,23 +84,23 @@ if sidecar_is_connected; then
 fi
 
 if ! "${SIDECARLAUNCHER_PATH}" devices 2>/dev/null | grep -Fxq "${DEVICE_NAME}"; then
-  set_state "unreachable" "${DEVICE_NAME} is not reachable"
+  set_state "unreachable" "${DEVICE_NAME} is not reachable (${TRIGGER_REASON})"
   exit 0
 fi
 
-log "Found ${DEVICE_NAME}, trying wired Sidecar"
+log "Found ${DEVICE_NAME}, trying wired Sidecar (${TRIGGER_REASON})"
 if "${SIDECARLAUNCHER_PATH}" connect "${DEVICE_NAME}" -wired >/dev/null 2>&1; then
   ensure_sidecar_is_main
-  set_state "connected" "Wired Sidecar connected"
+  set_state "connected" "Wired Sidecar connected (${TRIGGER_REASON})"
   exit 0
 fi
 
-log "Wired connect failed, retrying with default transport"
+log "Wired connect failed, retrying with default transport (${TRIGGER_REASON})"
 if "${SIDECARLAUNCHER_PATH}" connect "${DEVICE_NAME}" >/dev/null 2>&1; then
   ensure_sidecar_is_main
-  set_state "connected" "Default Sidecar connected"
+  set_state "connected" "Default Sidecar connected (${TRIGGER_REASON})"
   exit 0
 fi
 
-set_state "reconnect-failed" "Sidecar reconnect failed"
+set_state "reconnect-failed" "Sidecar reconnect failed (${TRIGGER_REASON})"
 exit 1

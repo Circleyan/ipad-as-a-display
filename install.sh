@@ -40,21 +40,23 @@ PY
   rm -rf "${tmp_dir}"
 }
 
-prompt_interval() {
-  local reply interval
+find_swiftc() {
+  local swiftc_path=""
 
-  printf 'Reconnect check interval in seconds [15]: '
-  read -r reply
-  interval="${reply:-15}"
+  if command -v swiftc >/dev/null 2>&1; then
+    swiftc_path="$(command -v swiftc)"
+  elif command -v xcrun >/dev/null 2>&1; then
+    swiftc_path="$(xcrun --find swiftc 2>/dev/null || true)"
+  fi
 
-  case "${interval}" in
-    15|30)
-      CHOSEN_INTERVAL="${interval}"
-      ;;
-    *)
-      fail "Only 15 or 30 seconds are supported."
-      ;;
-  esac
+  [[ -n "${swiftc_path}" ]] || fail "swiftc is required to build the local event monitor. Install Xcode Command Line Tools first, then rerun install."
+  SWIFTC_PATH="${swiftc_path}"
+}
+
+compile_monitor() {
+  install -m 644 "${SCRIPT_DIR}/templates/ipad-as-a-display-monitor.swift" "${MONITOR_SOURCE_PATH}"
+  "${SWIFTC_PATH}" -framework AppKit -framework IOKit "${MONITOR_SOURCE_PATH}" -o "${MONITOR_BINARY_PATH}"
+  chmod +x "${MONITOR_BINARY_PATH}"
 }
 
 prompt_yes_no() {
@@ -116,21 +118,18 @@ choose_device_name() {
 
 write_config() {
   local device_name="$1"
-  local interval="$2"
-  local set_main="$3"
+  local set_main="$2"
 
   {
     printf 'DEVICE_NAME=%q\n' "${device_name}"
-    printf 'CHECK_INTERVAL_SECONDS=%q\n' "${interval}"
     printf 'SET_IPAD_AS_MAIN_DISPLAY=%q\n' "${set_main}"
+    printf 'RECOVERY_MODE=%q\n' "wake-and-usb-events"
     printf 'BETTERDISPLAY_PATH=%q\n' "${BETTERDISPLAY_PATH}"
     printf 'SIDECARLAUNCHER_PATH=%q\n' "${SIDECARLAUNCHER_PATH}"
   } > "${CONFIG_FILE}"
 }
 
 write_plist() {
-  local interval="$1"
-
   cat > "${PLIST_PATH}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -142,13 +141,12 @@ write_plist() {
   <string>Aqua</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/zsh</string>
-    <string>${SERVICE_SCRIPT_PATH}</string>
+    <string>${MONITOR_BINARY_PATH}</string>
   </array>
+  <key>KeepAlive</key>
+  <true/>
   <key>RunAtLoad</key>
   <true/>
-  <key>StartInterval</key>
-  <integer>${interval}</integer>
   <key>StandardOutPath</key>
   <string>${LOG_STDOUT}</string>
   <key>StandardErrorPath</key>
@@ -167,6 +165,7 @@ install_launch_agent() {
 require_command curl
 require_command python3
 require_command unzip
+require_command install
 
 [[ "$(uname -s)" == "Darwin" ]] || fail "This installer only supports macOS."
 [[ -x "${BETTERDISPLAY_PATH}" ]] || fail "BetterDisplay is required. Install BetterDisplay first, then rerun install."
@@ -183,11 +182,10 @@ say "  3. Keep BetterDisplay installed."
 say ""
 
 download_sidecarlauncher
+find_swiftc
 
 choose_device_name
-prompt_interval
 DEVICE_NAME="${CHOSEN_DEVICE_NAME}"
-CHECK_INTERVAL_SECONDS="${CHOSEN_INTERVAL}"
 
 if prompt_yes_no "Always make the iPad the main display?" "y"; then
   SET_IPAD_AS_MAIN_DISPLAY="true"
@@ -195,16 +193,17 @@ else
   SET_IPAD_AS_MAIN_DISPLAY="false"
 fi
 
-write_config "${DEVICE_NAME}" "${CHECK_INTERVAL_SECONDS}" "${SET_IPAD_AS_MAIN_DISPLAY}"
+write_config "${DEVICE_NAME}" "${SET_IPAD_AS_MAIN_DISPLAY}"
 install -m 755 "${SCRIPT_DIR}/templates/ipad-as-a-display.sh" "${SERVICE_SCRIPT_PATH}"
-write_plist "${CHECK_INTERVAL_SECONDS}"
+compile_monitor
+write_plist
 plutil -lint "${PLIST_PATH}" >/dev/null
 install_launch_agent
 
 say ""
 say "Install complete."
 say "  iPad name: ${DEVICE_NAME}"
-say "  Check interval: ${CHECK_INTERVAL_SECONDS}s"
+say "  Recovery mode: wake + USB replug events"
 say "  Make iPad main display: ${SET_IPAD_AS_MAIN_DISPLAY}"
 say ""
 say "Next step: run ./test.sh once while a normal monitor is still attached."

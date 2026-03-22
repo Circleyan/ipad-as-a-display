@@ -42,11 +42,17 @@ fi
 if load_config; then
   print_status "Config file" "OK" "${CONFIG_FILE}"
   print_status "Configured iPad" "OK" "${DEVICE_NAME}"
-  print_status "Check interval" "OK" "${CHECK_INTERVAL_SECONDS}s"
+  print_status "Recovery mode" "OK" "${RECOVERY_MODE:-wake-and-usb-events}"
   print_status "Set iPad as main" "OK" "${SET_IPAD_AS_MAIN_DISPLAY}"
 else
   print_status "Config file" "MISS" "Run ./install.sh first."
   exit 0
+fi
+
+if [[ -x "${MONITOR_BINARY_PATH}" ]]; then
+  print_status "Event monitor" "OK" "${MONITOR_BINARY_PATH}"
+else
+  print_status "Event monitor" "MISS" "Run ./install.sh first."
 fi
 
 if [[ -f "${PLIST_PATH}" ]]; then
