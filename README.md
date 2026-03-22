@@ -20,7 +20,11 @@ If it saves you time and you would like to support continued maintenance, you ca
 
 This is a donation, not a purchase. Donations are optional and are not required to use the project.
 
-You can add your donation link or QR code here later without changing the license.
+Suggested amount: RMB 9.9.
+
+WeChat donation QR code:
+
+<img src="./docs/wechat-donate-9.9.jpg" alt="WeChat donation QR code" width="320" />
 
 ## What This Is For
 
