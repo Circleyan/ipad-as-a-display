@@ -16,9 +16,9 @@ This project is open source under the MIT License. See [LICENSE](./LICENSE).
 
 This project stays open source.
 
-If it saves you time and you would like to support continued maintenance, you can "buy me a coffee".
+If it saves you time and you would like to support continued maintenance, you can "请我一杯咖啡" ("buy me a coffee").
 
-Donations are optional and are not required to use the project.
+This is a donation, not a purchase. Donations are optional and are not required to use the project.
 
 You can add your donation link or QR code here later without changing the license.
 
