@@ -5,6 +5,79 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 source "${SCRIPT_DIR}/lib/common.sh"
 
+RUN_SMOKE_TEST="true"
+
+usage() {
+  cat <<'EOF'
+Usage: ./install.sh [--install-only]
+
+Options:
+  --install-only  Install the helper, but skip the automatic post-install test.
+EOF
+}
+
+detect_swiftc_path() {
+  local swiftc_path=""
+
+  if command -v swiftc >/dev/null 2>&1; then
+    swiftc_path="$(command -v swiftc)"
+  elif command -v xcrun >/dev/null 2>&1; then
+    swiftc_path="$(xcrun --find swiftc 2>/dev/null || true)"
+  fi
+
+  [[ -n "${swiftc_path}" ]] && printf '%s\n' "${swiftc_path}"
+}
+
+run_preflight() {
+  local failures=0
+  local swiftc_path=""
+
+  say "Quick preflight"
+  say "---------------"
+
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    print_status "macOS" "OK" "This Mac can run the setup."
+  else
+    print_status "macOS" "MISS" "This installer only supports macOS."
+    failures=$(( failures + 1 ))
+  fi
+
+  if betterdisplay_is_installed; then
+    print_status "BetterDisplay" "OK" "${BETTERDISPLAY_PATH}"
+  else
+    print_status "BetterDisplay" "MISS" "Install BetterDisplay first, then run Start.command again."
+    failures=$(( failures + 1 ))
+  fi
+
+  if betterdisplay_is_running; then
+    print_status "BetterDisplay app" "OK" "BetterDisplay is already running."
+  else
+    print_status "BetterDisplay app" "WARN" "Open BetterDisplay before you start using the iPad."
+  fi
+
+  for command_name in curl python3 unzip install; do
+    if command -v "${command_name}" >/dev/null 2>&1; then
+      print_status "${command_name}" "OK" "Command is available."
+    else
+      print_status "${command_name}" "MISS" "Required command is missing."
+      failures=$(( failures + 1 ))
+    fi
+  done
+
+  swiftc_path="$(detect_swiftc_path || true)"
+  if [[ -n "${swiftc_path}" ]]; then
+    print_status "swiftc" "OK" "${swiftc_path}"
+  else
+    print_status "swiftc" "MISS" "Run xcode-select --install first, then run Start.command again."
+    failures=$(( failures + 1 ))
+  fi
+
+  say ""
+  if (( failures > 0 )); then
+    fail "Fix the items marked MISS above, then run Start.command again."
+  fi
+}
+
 download_sidecarlauncher() {
   local download_url tmp_dir zip_path
 
@@ -43,12 +116,7 @@ PY
 find_swiftc() {
   local swiftc_path=""
 
-  if command -v swiftc >/dev/null 2>&1; then
-    swiftc_path="$(command -v swiftc)"
-  elif command -v xcrun >/dev/null 2>&1; then
-    swiftc_path="$(xcrun --find swiftc 2>/dev/null || true)"
-  fi
-
+  swiftc_path="$(detect_swiftc_path || true)"
   [[ -n "${swiftc_path}" ]] || fail "swiftc is required to build the local event monitor. Install Xcode Command Line Tools first, then rerun install."
   SWIFTC_PATH="${swiftc_path}"
 }
@@ -86,7 +154,7 @@ choose_device_name() {
   local -a device_lines
 
   devices="$("${SIDECARLAUNCHER_PATH}" devices 2>/dev/null || true)"
-  [[ -n "${devices}" ]] || fail "No reachable Sidecar iPad found. Unlock the iPad, trust this Mac, keep USB-C connected, then rerun install."
+  [[ -n "${devices}" ]] || fail "No reachable Sidecar iPad found. Unlock the iPad, trust this Mac, keep USB-C connected, then rerun Start.command."
 
   device_lines=("${(@f)devices}")
   device_count="${#device_lines[@]}"
@@ -102,7 +170,10 @@ choose_device_name() {
     read -r reply
     reply="${reply:-y}"
     case "${reply:l}" in
-      y|yes) CHOSEN_DEVICE_NAME="${device_lines[1]}"; return 0 ;;
+      y|yes)
+        CHOSEN_DEVICE_NAME="${device_lines[1]}"
+        return 0
+        ;;
     esac
   fi
 
@@ -162,28 +233,47 @@ install_launch_agent() {
   launchctl kickstart -k "gui/$(id -u)/${LAUNCHD_LABEL}" >/dev/null 2>&1 || true
 }
 
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --install-only|--skip-test)
+      RUN_SMOKE_TEST="false"
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      fail "Unknown argument: $1"
+      ;;
+  esac
+  shift
+done
+
 require_command curl
 require_command python3
 require_command unzip
 require_command install
 
-[[ "$(uname -s)" == "Darwin" ]] || fail "This installer only supports macOS."
-[[ -x "${BETTERDISPLAY_PATH}" ]] || fail "BetterDisplay is required. Install BetterDisplay first, then rerun install."
-
 mkdir -p "${BIN_DIR}" "$(dirname -- "${PLIST_PATH}")"
 
 say "ipad-as-a-display"
 say ""
-say "First-time setup must be done while the Mac has a working screen and the iPad is connected over USB-C."
-say "Before continuing:"
-say "  1. Unlock the iPad."
-say "  2. Trust this Mac on the iPad if prompted."
-say "  3. Keep BetterDisplay installed."
+say "This setup is meant to feel like one button:"
+say "  1. Keep a normal monitor connected for this first install."
+say "  2. Connect the iPad over USB-C and unlock it."
+say "  3. Trust this Mac on the iPad if prompted."
+say "  4. Keep BetterDisplay installed."
 say ""
 
+run_preflight
+
+say "Step 1/4: downloading SidecarLauncher"
 download_sidecarlauncher
+
+say "Step 2/4: checking the local Swift compiler"
 find_swiftc
 
+say "Step 3/4: choosing the iPad to use"
 choose_device_name
 DEVICE_NAME="${CHOSEN_DEVICE_NAME}"
 
@@ -193,6 +283,7 @@ else
   SET_IPAD_AS_MAIN_DISPLAY="false"
 fi
 
+say "Step 4/4: installing the local helper"
 write_config "${DEVICE_NAME}" "${SET_IPAD_AS_MAIN_DISPLAY}"
 install -m 755 "${SCRIPT_DIR}/templates/ipad-as-a-display.sh" "${SERVICE_SCRIPT_PATH}"
 compile_monitor
@@ -205,5 +296,12 @@ say "Install complete."
 say "  iPad name: ${DEVICE_NAME}"
 say "  Recovery mode: wake + USB replug events"
 say "  Make iPad main display: ${SET_IPAD_AS_MAIN_DISPLAY}"
-say ""
-say "Next step: run ./test.sh once while a normal monitor is still attached."
+
+if [[ "${RUN_SMOKE_TEST}" == "true" ]]; then
+  say ""
+  say "Now I will run one automatic test for you."
+  "${SCRIPT_DIR}/test.sh" --from-install
+else
+  say ""
+  say "Next step: run ./test.sh once while the normal monitor is still attached."
+fi

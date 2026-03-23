@@ -1,107 +1,148 @@
 # ipad-as-a-display
 
-让 iPad 成为没有常驻显示器的 Mac mini 的可插拔主屏。
+让 iPad 成为 Mac mini 的可插拔屏幕。
 
-## 中文
+![实际使用照片](./docs/real-world-setup.jpg)
 
-### 先告诉使用者什么
+一句话说明：
 
-只需要先让使用者知道这四件事：
+第一次用一台普通显示器把它装好。以后拔掉 USB-C，iPad 立刻回到普通 iPad；重新插回 USB-C，或者先唤醒 Mac mini 再插线，iPad 又会变成 Mac 的屏幕。
 
-1. 首次安装时，Mac mini 必须先接着一台正常显示器。
-2. 安装时只做两步：先跑 `./install.sh`，再跑 `./test.sh`。
-3. 日常使用时，拔掉 USB-C，iPad 就回到普通 iPad；重新插回 USB-C，或先唤醒 Mac 再插线，iPad 会重新变成显示器。
-4. 如果没有成功，不要先重装，先跑 `./doctor.sh` 看状态。
+## 适合谁
 
-### 使用路线图
+这个项目适合你，如果你满足这些条件：
 
-```mermaid
-flowchart TD
-    A["首次安装前<br/>Mac mini 先接普通显示器"] --> B["USB-C 连接 iPad<br/>解锁并信任这台 Mac"]
-    B --> C["运行 ./install.sh"]
-    C --> D["运行 ./test.sh"]
-    D --> E{"iPad 已显示 macOS 桌面?"}
-    E -- "是" --> F["进入日常使用"]
-    F --> G["拔线后回到普通 iPad"]
-    G --> H["重新插线或唤醒 Mac 后再插线"]
-    H --> I["iPad 恢复为 Mac mini 显示器"]
-    E -- "否" --> J["运行 ./doctor.sh"]
-    J --> D
-```
+- 你在用 `Mac mini`
+- 你想把 `iPad` 通过 `USB-C` 当作主要工作屏
+- 你接受首次安装时先接一台普通显示器
+- 你接受 `BetterDisplay` 在后台作为显示锚点
+- 你接受这是一套实用工作流，不是 Apple 官方提供的无头模式
 
-### 现在就怎么做
+## 它会帮你做什么
 
-1. 给 Mac mini 接上一台普通显示器。
-2. 用 USB-C 连接 iPad，并解锁它。
-3. 如果 iPad 弹出“信任这台 Mac”，选择信任。
-4. 确认 `BetterDisplay` 已安装。
-5. 运行：
+- 提供一个可以直接双击的 `Start.command`
+- 在真正安装前先做一轮 preflight 体检
+- 自动下载并安装 `SidecarLauncher`
+- 安装一个本地监听器，在 `Mac 唤醒` 和 `USB 变化` 时尝试恢复 Sidecar
+- 可选把 iPad 固定为主屏
+- 提供 `test.sh`、`doctor.sh`、`uninstall.sh`
+
+## 第一次安装
+
+第一次安装前，请先确认：
+
+- `BetterDisplay` 已安装
+- `iPad` 和 `Mac mini` 用的是同一个 Apple Account
+- `Mac mini` 已开启自动登录
+- `iPad` 已通过 `USB-C` 连上，并且已经解锁
+- 第一次安装时，`Mac mini` 仍接着一台普通显示器
+
+然后只做这一件事：
+
+1. 直接双击 `Start.command`
+
+它会自动帮你做这几件事：
+
+- 检查 `BetterDisplay`、`swiftc` 和基础命令是否齐全
+- 下载 `SidecarLauncher`
+- 让你选择要使用的 iPad
+- 安装本地监听器和 LaunchAgent
+- 自动跑一次连接测试
+
+安装过程中你通常只需要做两件事：
+
+1. 选择要使用的 iPad
+2. 选择是否始终把 iPad 设为主屏
+
+如果 macOS 第一次阻止双击运行，右键 `Start.command`，选择“打开”一次就行。
+
+如果你更习惯命令行，也可以执行：
 
 ```zsh
-chmod +x install.sh test.sh doctor.sh uninstall.sh
-./install.sh
-./test.sh
+chmod +x Start.command install.sh test.sh doctor.sh uninstall.sh
+./Start.command
 ```
 
-### 日常使用
+如果安装时报 `swiftc` 缺失，先执行：
 
-- 不用时，直接拔掉 USB-C，iPad 立刻回到普通 iPad。
-- 下次再用时，先唤醒 Mac mini，再插回 USB-C，解锁 iPad。
-- 这套方案不再依赖固定 `15s` 轮询，而是由唤醒事件和 USB 变化触发恢复。
+```zsh
+xcode-select --install
+```
 
-### 成功的标准
+然后重新双击 `Start.command`。
 
-只看这四点：
+## 怎么算成功
+
+只看这四件事：
 
 - iPad 已经显示 macOS 桌面
-- 拔掉 USB-C 后，iPad 立刻回到普通 iPad
-- 重新插回 USB-C 并解锁后，iPad 能恢复成显示器
+- 拔掉 `USB-C` 后，iPad 立刻回到普通 iPad
+- 重新插回 `USB-C` 并解锁后，iPad 能恢复成显示器
 - 如果 Mac mini 先睡眠，再由键盘或板子唤醒，已插线的 iPad 也能恢复
 
-### 如果没成功
+## 日常使用
 
-先运行：
+日常使用只有两种动作。
+
+结束使用时：
+
+1. 直接拔掉 `USB-C`
+2. iPad 立刻回到普通 iPad
+3. Mac mini 继续运行，或者之后自己睡眠
+
+开始使用时：
+
+1. 如果 Mac mini 睡眠了，先用键盘或板子唤醒它
+2. 把 iPad 重新通过 `USB-C` 接回去
+3. 解锁 iPad
+4. 等它恢复成 Mac mini 的屏幕
+
+## 如果没成功
+
+先不要重装，先运行：
 
 ```zsh
 ./doctor.sh
 ```
 
-先看这几个问题：
+`doctor.sh` 现在会直接告诉你属于哪一类问题，以及下一步该做什么。
+
+优先检查这些：
 
 - `BetterDisplay` 是否已经安装并正在运行
 - iPad 是否仍然解锁，并且还能被 `SidecarLauncher` 识别
-- iPad 和 Mac 是否还在同一个 Apple Account 下
-- 你是不是在第一次安装前就已经把显示器拔掉了
+- iPad 和 Mac 是否仍然是同一个 Apple Account
+- 第一次安装时，你是否还接着一台普通显示器
 - 如果安装时报 `swiftc` 缺失，是否已经安装 Xcode Command Line Tools
 
-<details>
-<summary>完整说明</summary>
+## 这套方案怎么工作
 
-#### 这个项目做了什么
+用户层面，你只需要理解一句话：
+
+插上就是显示器，拔掉就是 iPad。
+
+实现层面，这个项目做了四件事：
 
 - `BetterDisplay` 提供隐藏显示器锚点，让 Mac mini 在没有 HDMI 时也保持可用
 - `SidecarLauncher` 负责从命令行重连 Sidecar
-- `LaunchAgent` 会启动一个本地监听器，监听 `Mac 唤醒` 和 `USB 设备变化`
-- 检测到这些事件时，脚本才会尝试恢复 iPad 显示
+- `LaunchAgent` 负责在登录后启动本地监听器
+- 本地监听器只在 `Mac 唤醒` 和 `USB 变化` 时触发恢复，不再依赖固定轮询
 
-#### 环境前提
+这也意味着：
 
-- 设备是运行 macOS 的 Mac mini
-- 已安装 `BetterDisplay`
-- iPad 和 Mac 使用同一个 Apple Account
-- Mac 已开启自动登录
-- 首次安装时，Mac 仍接着一台正常显示器
-- 首次安装时，iPad 可以通过 USB-C 解锁并信任这台 Mac
-- 如果安装时缺少 `swiftc`，需要先安装 Xcode Command Line Tools
+- 当前模式优先服务“插拔式使用”
+- 它不是“锁屏后持续自愈”的方案
+- `SidecarLauncher` 使用私有 API，未来的 macOS 更新可能会让这套方案失效
 
-#### 仓库文件
+## 仓库文件
 
-- `install.sh`：首次安装、写入配置、编译本地监听器、安装 LaunchAgent
-- `test.sh`：立即执行一轮恢复，并打印当前状态
-- `doctor.sh`：查看当前健康状态与日志
+- `Start.command`：给普通用户双击的一键入口
+- `install.sh`：首次安装、写入配置、编译本地监听器、安装 LaunchAgent，并自动跑一次测试
+- `test.sh`：手动再跑一次恢复测试
+- `doctor.sh`：检查当前安装状态，并直接给出诊断和下一步动作
 - `uninstall.sh`：移除已安装服务
 
-#### 安装后会写入哪里
+## 安装后会写入哪里
 
 - LaunchAgent：`~/Library/LaunchAgents/local.ipad-as-a-display.plist`
 - 配置文件：`~/Library/Application Support/ipad-as-a-display/config.env`
@@ -111,106 +152,11 @@ chmod +x install.sh test.sh doctor.sh uninstall.sh
 - 标准日志：`/tmp/ipad-as-a-display.log`
 - 错误日志：`/tmp/ipad-as-a-display.err`
 
-#### 卸载
+## 卸载
 
 ```zsh
 ./uninstall.sh
 ```
-
-#### 注意事项
-
-- 当前恢复模式是 `wake + USB replug`，不是“锁屏后持续自愈”
-- `BetterDisplay` 是实现细节。用户只需要理解：插上就是显示器，拔掉就是 iPad
-- `SidecarLauncher` 使用私有 API，未来的 macOS 更新可能会让这套方案失效
-
-</details>
-
-<details>
-<summary>展开英文版</summary>
-
-### What users need to know first
-
-Keep the message simple:
-
-1. For first-time setup, the Mac mini must still have a normal monitor attached.
-2. Setup is only two actions: run `./install.sh`, then run `./test.sh`.
-3. In daily use, unplugging USB-C returns the iPad to normal iPad mode; plugging it back in, or waking the Mac and then plugging it in, restores the display.
-4. If it does not work, do not reinstall first. Run `./doctor.sh` first.
-
-### User Flow
-
-```mermaid
-flowchart TD
-    A["Before first-time setup<br/>Keep a normal monitor attached"] --> B["Connect the iPad over USB-C<br/>Unlock it and trust the Mac"]
-    B --> C["Run ./install.sh"]
-    C --> D["Run ./test.sh"]
-    D --> E{"Is the macOS desktop visible on the iPad?"}
-    E -- "Yes" --> F["Move to daily use"]
-    F --> G["Unplug USB-C and the iPad returns to normal use"]
-    G --> H["Plug USB-C back in, or wake the Mac and then plug it in"]
-    H --> I["The iPad returns as the Mac mini display"]
-    E -- "No" --> J["Run ./doctor.sh"]
-    J --> D
-```
-
-### Quick Start
-
-1. Attach a normal monitor to the Mac mini.
-2. Connect the iPad over USB-C and unlock it.
-3. Trust the Mac on the iPad if prompted.
-4. Make sure `BetterDisplay` is installed.
-5. Run:
-
-```zsh
-chmod +x install.sh test.sh doctor.sh uninstall.sh
-./install.sh
-./test.sh
-```
-
-### Daily Use
-
-- Unplug USB-C when you want the iPad back as a normal iPad.
-- Wake the Mac mini, reconnect USB-C, and unlock the iPad when you want the display back.
-- Recovery is event-driven through wake and USB changes, not fixed-interval polling.
-
-### Success Looks Like This
-
-- the iPad shows the macOS desktop
-- unplugging USB-C returns the iPad to normal iPad mode
-- plugging USB-C back in and unlocking the iPad restores the display
-- if the Mac sleeps first, waking it with the keyboard or trackpad also restores the connected iPad
-
-### If It Does Not Work
-
-Run:
-
-```zsh
-./doctor.sh
-```
-
-Check these first:
-
-- is `BetterDisplay` installed and running
-- is the iPad unlocked and still visible to `SidecarLauncher`
-- are both devices still on the same Apple Account
-- did you keep a physical monitor attached during first-time setup
-- if install reports missing `swiftc`, did you install Xcode Command Line Tools
-
-### Full Notes
-
-- `install.sh`: first-time setup, config writing, local monitor build, LaunchAgent install
-- `test.sh`: run one recovery cycle and show status
-- `doctor.sh`: print current health and logs
-- `uninstall.sh`: remove the installed service
-- LaunchAgent: `~/Library/LaunchAgents/local.ipad-as-a-display.plist`
-- Config: `~/Library/Application Support/ipad-as-a-display/config.env`
-- Service script: `~/Library/Application Support/ipad-as-a-display/ipad-as-a-display.sh`
-- Monitor source: `~/Library/Application Support/ipad-as-a-display/ipad-as-a-display-monitor.swift`
-- Monitor binary: `~/Library/Application Support/ipad-as-a-display/ipad-as-a-display-monitor`
-- Log: `/tmp/ipad-as-a-display.log`
-- Error log: `/tmp/ipad-as-a-display.err`
-
-</details>
 
 ## Support
 
@@ -235,3 +181,23 @@ This project is open source under the MIT License. See [LICENSE](./LICENSE).
 - This project uses [Ocasio-J/SidecarLauncher](https://github.com/Ocasio-J/SidecarLauncher) to trigger Sidecar connections from the command line
 - `SidecarLauncher` is open source under the MIT License
 - See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for third-party licensing notes
+
+<details>
+<summary>English Summary</summary>
+
+`ipad-as-a-display` turns an iPad into a practical plug-in display for a Mac mini.
+
+First-time setup still needs a normal monitor. After setup:
+
+- unplug USB-C and the iPad returns to normal iPad mode
+- plug USB-C back in, or wake the Mac mini and then plug it in, and the iPad returns as the display
+
+The easiest path is to double-click `Start.command`, which runs preflight checks, installs the local helper, and performs one automatic test.
+
+This project uses:
+
+- `BetterDisplay` as the hidden display anchor
+- `SidecarLauncher` for Sidecar reconnection
+- a local LaunchAgent and monitor process that react to wake and USB events
+
+</details>
