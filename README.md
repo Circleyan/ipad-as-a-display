@@ -1,22 +1,30 @@
 # ipad-as-a-display
 
-让 iPad 成为 Mac mini 的可插拔屏幕。
+让 iPad 在你离开固定工位时，成为 Mac mini 的应急屏幕。
 
 ![实际使用照片](./docs/real-world-setup.jpg)
 
 一句话说明：
 
-第一次用一台普通显示器把它装好。以后拔掉 USB-C，iPad 立刻回到普通 iPad；重新插回 USB-C，或者先唤醒 Mac mini 再插线，iPad 又会变成 Mac 的屏幕。
+这是一个在外的应急连续性方案，不是用来替代你家里或工作室那套正式桌面配置的。第一次用一台普通显示器把它装好。以后当你必须离开固定工位时，拔掉 USB-C，iPad 立刻回到普通 iPad；重新插回 USB-C，或者先唤醒 Mac mini 再插线，iPad 又会临时变成 Mac 的屏幕。
 
 ## 适合谁
 
 这个项目适合你，如果你满足这些条件：
 
 - 你在用 `Mac mini`
-- 你想把 `iPad` 通过 `USB-C` 当作主要工作屏
+- 你平时在固定位置上已经有更好的显示器和桌面配置
+- 你偶尔需要离开固定工位几天，但还是想继续用这台 `Mac mini`
+- 你已经有一台 `iPad`，愿意在这些场景里把它通过 `USB-C` 当作临时屏幕
 - 你接受首次安装时先接一台普通显示器
 - 你接受 `BetterDisplay` 在后台作为显示锚点
 - 你接受这是一套实用工作流，不是 Apple 官方提供的无头模式
+
+## 它不是什么
+
+- 它不是为了替代你家里或工作室那套正式显示配置
+- 它不是为了把 `Mac mini` 变成理想的移动工作站
+- 它是为了让你在出差、陪护、短住、临时搬离固定工位时，不至于完全用不了自己的 `Mac mini`
 
 ## 它会帮你做什么
 
@@ -26,6 +34,7 @@
 - 安装一个本地监听器，在 `Mac 唤醒` 和 `USB 变化` 时尝试恢复 Sidecar
 - 可选把 iPad 固定为主屏
 - 提供 `test.sh`、`doctor.sh`、`uninstall.sh`
+- 在你离开固定工位时，尽量把“我现在完全用不了这台 Mac mini”变成“我至少还能把它用起来”
 
 ## 第一次安装
 
@@ -80,9 +89,11 @@ xcode-select --install
 - 重新插回 `USB-C` 并解锁后，iPad 能恢复成显示器
 - 如果 Mac mini 先睡眠，再由键盘或板子唤醒，已插线的 iPad 也能恢复
 
-## 日常使用
+这里的“成功”不是指它比你在家里的正式显示器更好，而是指你离开固定工位时，不需要再多带一块屏，也不至于完全失去这台 `Mac mini` 的可用性。
 
-日常使用只有两种动作。
+## 离开固定工位时怎么用
+
+真正需要它的时候，通常只有两种动作。
 
 结束使用时：
 
@@ -119,7 +130,7 @@ xcode-select --install
 
 用户层面，你只需要理解一句话：
 
-插上就是显示器，拔掉就是 iPad。
+离开固定工位时，插上就是应急屏幕，拔掉就是 iPad。
 
 实现层面，这个项目做了四件事：
 
@@ -130,8 +141,9 @@ xcode-select --install
 
 这也意味着：
 
-- 当前模式优先服务“插拔式使用”
+- 当前模式优先服务“离开固定工位时的应急连续性”
 - 它不是“锁屏后持续自愈”的方案
+- 它不是为了替代你原本那套更好的固定桌面配置
 - `SidecarLauncher` 使用私有 API，未来的 macOS 更新可能会让这套方案失效
 
 ## 仓库文件
@@ -185,7 +197,7 @@ This project is open source under the MIT License. See [LICENSE](./LICENSE).
 <details>
 <summary>English Summary</summary>
 
-`ipad-as-a-display` turns an iPad into a practical plug-in display for a Mac mini.
+`ipad-as-a-display` turns an iPad into an emergency continuity display for a Mac mini when you are away from your normal desk setup.
 
 First-time setup still needs a normal monitor. After setup:
 
@@ -193,6 +205,8 @@ First-time setup still needs a normal monitor. After setup:
 - plug USB-C back in, or wake the Mac mini and then plug it in, and the iPad returns as the display
 
 The easiest path is to double-click `Start.command`, which runs preflight checks, installs the local helper, and performs one automatic test.
+
+This is not meant to replace a proper home or studio monitor setup. It is meant to keep the Mac mini usable when you temporarily have to leave that setup behind.
 
 This project uses:
 
